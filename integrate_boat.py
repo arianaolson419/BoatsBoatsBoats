@@ -7,7 +7,10 @@ def boat_hull(y, n):
 	return y**n - 1
 
 def water_line(y, theta, d):
-	return tan(theta*pi/180)*y -d
+	return tan(theta*pi/180)*y - d
+
+def another_line(y, theta, d):
+	return (-1/tan(theta*pi/180))*y - d
 
 def above_water(hull, L, y_int, argument):                    #returns integral of hull to waterline L when the whole top of the hull is above water
 	if y_int[0]<0:
@@ -24,19 +27,28 @@ def hull_part_submerged(hull, L, y_int, water_int, hull_int, argument):         
 	else:
 		return integrate(integrate(argument, (z, hull[0], L)), (y, y_int[0], water_int[0]))+integrate(integrate(argument, (z, hull[0], 0)), (y, water_int[0], 0))+integrate(integrate(argument, (z, hull[1], 0)), (y, 0, hull_int[1]))
 
-def heeled_over1(hull, L, argument):					   #returns integral of hull to waterline L when the boat is flipped partly over, ie theta > 90 degrees
-	pass
+def heeled_over1(hull, L, y_int, water_int, hull_int, argument):					   #returns integral of hull to waterline L when the boat is flipped partly over, ie theta > 90 degrees
+	return integrate(integrate(argument, (z, L, 0)), (y, water_int[0], y_int[len(y_int)-1])) + integrate(integrate(argument, (z, hull[1], 0)), (y, y_int[len(y_int)-1], hull_int[1]))
+
+def heeled_over2(hull, L, y_int, water_int, hull_int, argument):					   #returns integral of hull to waterline L when the boat is flipped partly over, ie theta > 90 degrees
+	return integrate(integrate(argument, (z, L, 0)), (y, water_int[0], y_int[len(y_int)-1])) + integrate(integrate(argument, (z, hull[0], 0)), (y, y_int[len(y_int)-1], 0)) + integrate(integrate(argument, (z, hull[1], 0)), (y, 0, hull_int[1]))
+
+def heeled_over3(hull, L, y_int, water_int, hull_int, argument):					   #returns integral of hull to waterline L when the boat is flipped partly over, ie theta > 90 degrees
+	return integrate(integrate(argument, (z, L, 0)), (y, water_int[0], y_int[len(y_int)-1])) + integrate(integrate(argument, (z, hull[1], 0)), (y, y_int[len(y_int)-1], hull_int[1]))
+
+def heeled_over4(hull, L, y_int, water_int, hull_int, argument):					   #returns integral of hull to waterline L when the boat is flipped partly over, ie theta > 90 degrees
+	return integrate(integrate(argument, (z, hull[0], L)), (y, y_int[0], 0)) + integrate(integrate(argument, (z, hull[1], L)), (y, 0, y_int[1]))
 
 def intersect_solve(hull, water):
 	y_int = []
 	y_int_temp = solve(hull[0]-water)			       #solve for boat-water intersection
-
+	
 	for intercept in y_int_temp:					   #eliminate imaginary results
 		if type(intercept)!=Add and intercept<0:
 			y_int.append(intercept)
 
 	y_int_temp = solve(hull[1]-water)					#repeat for other half of hull
-
+	
 	for intercept in y_int_temp:
 		if type(intercept)!=Add and intercept>=0:
 			y_int.append(intercept)
@@ -56,6 +68,7 @@ def integrate_water(argument, params):
 	water = water_line(y, theta, d)
 
 	y_int = intersect_solve(hull, water)
+	# print y_int
 	water_int = solve(water)
 	hull_int = [solve(hull[0])[0], -solve(hull[0])[0]]
 
@@ -66,7 +79,16 @@ def integrate_water(argument, params):
 			return hull_part_submerged(hull, water, y_int, water_int, hull_int, argument)
 	else:
 		if abs(water_int[0]) <= hull_int[1]:
-			pass
+			if water_int[0] >= 0:
+				return heeled_over1(hull, water, y_int, water_int, hull_int, argument)
+			elif d >= 1:
+				return heeled_over2(hull, water, y_int, water_int, hull_int, argument)
+			else:
+				return heeled_over3(hull, water, y_int, water_int, hull_int, argument)
+		else:
+			return integrate_boat(argument, params) - heeled_over4(hull, water, y_int, water_int, hull_int, argument)
+	if theta == 180:
+		print 'yer flipped matey'
 
 
 def integrate_boat(argument, params):                                  
@@ -86,7 +108,7 @@ def integrate_boat(argument, params):
 
 	return above_water(hull, water, hull_int, argument)
 
-def plot_boat(com, cob, params):
+def plot_boat(com, cob, vector_cob_com, vector_buoyancy, params):
 	n = params[0]
 	theta = params[1]										   #unpack variables
 	d = params[2]
@@ -99,6 +121,8 @@ def plot_boat(com, cob, params):
 	hull_plot = []
 	waterline_plot = []
 	hull_top_plot = [0]*200
+	another_line1 = another_line(y, theta, -com[1])
+	plot_another_line = []
 	for i in minus:
 		hull_plot.append(hull[0].subs(y, i))
 	for i in plus:
@@ -107,12 +131,23 @@ def plot_boat(com, cob, params):
 		waterline_plot.append(water.subs(y, i))
 	for i in plus:
 		waterline_plot.append(water.subs(y, i))
-
+	for i in minus:
+		plot_another_line.append(another_line1.subs(y, i))
+	for i in plus:
+		plot_another_line.append(another_line1.subs(y, i))
+	plt.title(str(theta))
 	plt.plot(minus+plus, hull_plot, 'b')
 	plt.plot(minus+plus, waterline_plot, 'g')
+	plt.plot(minus+plus, plot_another_line, 'y')
 	plt.plot(minus+plus, hull_top_plot, 'b')
 	plt.plot(com[0], com[1], 'go')
 	plt.plot(cob[0], cob[1], 'ro')
+	plt.plot([com[0], com[0]+vector_cob_com[0]], [com[1], com[1]+vector_cob_com[1]], 'r')
+	plt.plot([0, vector_buoyancy[0]], [0, vector_buoyancy[1]], 'r')
+	plt.plot([0,0], [0, -1], 'b')
+	axes = plt.gca()
+	axes.set_xlim([-1,1])
+	axes.set_ylim([-1,1])
 	plt.show()
 
 def boat_cob(params):
@@ -133,11 +168,35 @@ def boat_com(params):
 	com.append(0)									#this part's x
 	return com
 
-params = [2, 15, .5]
-print integrate_boat(1, params)
-print integrate_water(1, params)
-cob = boat_cob(params)
-com =  boat_com(params)
-print com
-print cob
-plot_boat(com, cob, params)
+for k in range(0, 20):
+	theta = 170-10*k
+	print theta
+	params = [1, theta, .6]
+	cob = boat_cob(params)
+	com =  boat_com(params)
+	print cob
+	print com
+	difference_cob_com = [0]*3
+	for i in range(3):
+		difference_cob_com[i] = cob[i]-com[i]
+	vector_cob_com = Matrix((difference_cob_com))
+	if theta <= 90:
+		vector_buoyancy = Matrix(([cos(pi/4-theta*pi/180), sin(pi/4-theta*pi/180), 0]))
+	else:
+		vector_buoyancy = Matrix(([cos(-pi/4+theta*pi/180), sin(-pi/4+theta*pi/180), 0]))
+	cross_result = vector_cob_com.cross(vector_buoyancy)[2]
+	print cross_result
+	if cross_result<0:
+		print 'rights'
+	if cross_result>0:
+		print 'tips'
+	if cross_result==0:
+		print 'sits'
+	# if theta > 90:	
+	# 	if cross_result>0:
+	# 		print 'rights'
+	# 	if cross_result<0:
+	# 		print 'tips'
+	# 	if cross_result==0:
+	# 		print 'sits'
+	plot_boat(com, cob, vector_cob_com, vector_buoyancy, params)
