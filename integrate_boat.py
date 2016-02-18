@@ -124,20 +124,20 @@ def plot_boat(com, cob, vector_cob_com, vector_buoyancy, params):
 	another_line1 = another_line(y, theta, -com[1])
 	plot_another_line = []
 	for i in minus:
-		hull_plot.append(hull[0].subs(y, i))
+		hull_plot.append(hull[0].subs(y, i)) #negative boat hull
 	for i in plus:
-		hull_plot.append(hull[1].subs(y, i))
+		hull_plot.append(hull[1].subs(y, i)) #positive boat hull
 	for i in minus:
-		waterline_plot.append(water.subs(y, i))
+		waterline_plot.append(water.subs(y, i)) #negative waterline
 	for i in plus:
-		waterline_plot.append(water.subs(y, i))
+		waterline_plot.append(water.subs(y, i)) #positive waterline
 	for i in minus:
 		plot_another_line.append(another_line1.subs(y, i))
 	for i in plus:
 		plot_another_line.append(another_line1.subs(y, i))
 	plt.title(str(theta))
-	plt.plot(minus+plus, hull_plot, 'b')
-	plt.plot(minus+plus, waterline_plot, 'g')
+	plt.plot(minus+plus, hull_plot, 'b') # hull
+	plt.plot(minus+plus, waterline_plot, 'g') #waterline
 	plt.plot(minus+plus, plot_another_line, 'y')
 	plt.plot(minus+plus, hull_top_plot, 'b')
 	plt.plot(com[0], com[1], 'go')
